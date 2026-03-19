@@ -484,7 +484,7 @@ async function buscarMercado(){
     $('valor-base').value=r.base;
     setTxt('market-price',fmt(r.base)); setTxt('market-count',`${r.total} anúncios`);
     const le=$('market-listings'); le.innerHTML='';
-    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail}" onerror="this.style.display='none'"/><span class="listing-title">${a.title}</span><span class="listing-cond">${a.condition==='new'?'Novo':'Usado'}</span><span class="listing-price">${fmt(a.price)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
+    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail}" onerror="this.style.display='none'"/><span class="listing-title">${a.titulo||a.title||''}</span><span class="listing-cond">${a.frete||a.condicao||''}</span><span class="listing-price">${fmt(a.preco||a.price||0)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
     $('market-bar').classList.add('visible');
   } catch(e){
     const msg = e.message.includes('Todos os métodos')
