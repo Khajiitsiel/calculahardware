@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CalculaHardware — Precifique sua peça usada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:      #070810;
+      --bg2:     #0d0e1a;
+      --bg3:     #13152a;
+      --border:  #1e2240;
+      --border2: #2a2f5e;
+      --neon:    #0ff;
+      --neon2:   #7b2fff;
+      --gold:    #f5c518;
+      --green:   #0ffa8e;
+      --red:     #ff3b5c;
+      --orange:  #ff7b2f;
+      --text:    #d8daf2;
+      --muted:   #5a6090;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background:var(--bg); color:var(--text); font-family:'Barlow',sans-serif; min-height:100vh; overflow-x:hidden; }
+    body::after { content:''; position:fixed; inset:0; background:repeating-linear-gradient(to bottom,transparent 0px,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px); pointer-events:none; z-index:1000; }
+    body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,255,0.022) 1px,transparent 1px); background-size:48px 48px; pointer-events:none; }
+
+    /* HEADER */
+    header { position:relative; z-index:10; padding:0 clamp(20px,4vw,60px); height:68px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); background:rgba(7,8,16,0.92); backdrop-filter:blur(16px); }
+    .logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
+    .logo-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--neon2),var(--neon)); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); display:flex; align-items:center; justify-content:center; font-size:16px; animation:pulse-hex 3s ease-in-out infinite; }
+    @keyframes pulse-hex { 0%,100%{filter:drop-shadow(0 0 5px var(--neon2))} 50%{filter:drop-shadow(0 0 14px var(--neon))} }
+    .logo-text { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#fff; }
+    .logo-text span { color:var(--neon); }
+    .header-tag { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); border:1px solid var(--border2); padding:5px 12px; border-radius:2px; }
+
+    /* TABS NAV */
+    .tab-nav { position:relative; z-index:9; display:flex; gap:0; border-bottom:1px solid var(--border); background:rgba(13,14,26,0.95); backdrop-filter:blur(12px); padding:0 clamp(16px,4vw,60px); }
+    .tab-btn { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--muted); background:transparent; border:none; border-bottom:2px solid transparent; padding:16px 24px; cursor:pointer; transition:color .2s,border-color .2s; display:flex; align-items:center; gap:8px; }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--neon); border-bottom-color:var(--neon); }
+    .tab-badge { background:var(--neon2); color:#fff; font-size:9px; padding:2px 6px; border-radius:10px; font-family:'IBM Plex Mono',monospace; min-width:18px; text-align:center; }
+
+    /* PAGES */
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* HERO */
+    .hero { position:relative; z-index:5; text-align:center; padding:clamp(36px,6vw,80px) clamp(20px,4vw,60px) clamp(24px,4vw,48px); }
+    .hero-glow { position:absolute; width:600px; height:260px; border-radius:50%; background:radial-gradient(ellipse,rgba(123,47,255,0.14) 0%,transparent 70%); top:-60px; left:50%; transform:translateX(-50%); pointer-events:none; }
+    .hero-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--neon); margin-bottom:12px; opacity:0; animation:fadeUp .6s .2s forwards; }
+    .hero-title { font-family:'Orbitron',sans-serif; font-size:clamp(28px,5vw,58px); font-weight:900; line-height:1.05; letter-spacing:-1px; margin-bottom:16px; opacity:0; animation:fadeUp .6s .4s forwards; }
+    .hero-title .line2 { background:linear-gradient(90deg,var(--neon2),var(--neon),var(--neon2)); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:shimmer 4s linear infinite,fadeUp .6s .4s forwards; }
+    @keyframes shimmer { to{background-position:200% center} }
+    .hero-sub { font-size:clamp(13px,1.8vw,16px); color:var(--muted); max-width:520px; margin:0 auto 32px; line-height:1.7; opacity:0; animation:fadeUp .6s .6s forwards; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    /* LAYOUT */
+    .app-shell { position:relative; z-index:5; max-width:1140px; margin:0 auto; padding:0 clamp(16px,4vw,40px) 80px; display:grid; grid-template-columns:420px 1fr; gap:24px; align-items:start; }
+    @media(max-width:860px){ .app-shell{grid-template-columns:1fr} }
+    .meupc-shell { position:relative; z-index:5; max-width:1140px; margin:0 auto; padding:32px clamp(16px,4vw,40px) 80px; }
+
+    /* CARD */
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; position:relative; overflow:hidden; }
+    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--neon2),var(--neon)); }
+    .card-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); }
+    .card-title { font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--neon); margin-bottom:3px; }
+    .card-sub { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+    .card-body { padding:20px 24px 24px; }
+
+    /* FORM */
+    .field { margin-bottom:16px; }
+    .field-label { display:flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    .field-label .num { background:var(--border2); color:var(--neon); width:17px; height:17px; border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+    input[type="text"],input[type="number"],select { width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:3px; padding:11px 14px; color:var(--text); font-family:'Barlow',sans-serif; font-size:14px; outline:none; transition:border-color .2s,box-shadow .2s; appearance:none; }
+    input:focus,select:focus { border-color:var(--neon); box-shadow:0 0 0 3px rgba(0,255,255,0.07); }
+    input::placeholder { color:var(--muted); }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a6090'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:34px; cursor:pointer; }
+    select option { background:var(--bg3); }
+    .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .field-hint { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-top:4px; padding-left:2px; }
+
+    /* BUTTONS */
+    .btn-search { width:100%; padding:13px; background:transparent; border:1px solid var(--neon); border-radius:3px; color:var(--neon); font-family:'Orbitron',sans-serif; font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+    .btn-search::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(0,255,255,0.08),transparent); transform:translateX(-100%); transition:transform .4s; }
+    .btn-search:hover::before { transform:translateX(100%); }
+    .btn-search:hover { background:rgba(0,255,255,0.05); box-shadow:0 0 18px rgba(0,255,255,0.12); }
+    .btn-search.loading { opacity:.5; pointer-events:none; }
+    .btn-calc { width:100%; padding:14px; background:linear-gradient(135deg,var(--neon2),#a855f7); border:none; border-radius:3px; color:#fff; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; margin-top:8px; transition:all .2s; box-shadow:0 4px 20px rgba(123,47,255,0.3); }
+    .btn-calc:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(123,47,255,0.45); }
+    .btn-calc:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .btn-outline { padding:10px 20px; background:transparent; border:1px solid var(--border2); border-radius:3px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; cursor:pointer; transition:all .2s; }
+    .btn-outline:hover { border-color:var(--neon); color:var(--neon); }
+    .btn-danger { padding:7px 14px; background:transparent; border:1px solid rgba(255,59,92,.3); border-radius:3px; color:var(--red); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .btn-danger:hover { background:rgba(255,59,92,.08); border-color:var(--red); }
+    .btn-batch { padding:14px 32px; background:linear-gradient(135deg,var(--green),var(--neon)); border:none; border-radius:3px; color:var(--bg); font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s; box-shadow:0 4px 20px rgba(0,255,255,0.25); }
+    .btn-batch:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,255,255,.35); }
+    .btn-batch:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .btn-add-peca { width:100%; padding:14px; background:transparent; border:1px dashed var(--border2); border-radius:3px; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .btn-add-peca:hover { border-color:var(--neon2); color:var(--neon2); background:rgba(123,47,255,.04); }
+
+    /* STATUS/ERROR */
+    .status-msg { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--neon); padding:8px 0 0; display:none; align-items:center; gap:8px; }
+    .status-msg.visible { display:flex; }
+    .spinner { width:11px; height:11px; border:2px solid var(--border2); border-top-color:var(--neon); border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .err-msg { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red); padding:8px 12px; background:rgba(255,59,92,0.07); border:1px solid rgba(255,59,92,.2); border-radius:3px; margin-top:8px; display:none; }
+    .err-msg.visible { display:block; }
+
+    /* MARKET BAR */
+    .market-bar { background:var(--bg3); border:1px solid var(--border2); border-radius:3px; padding:12px 14px; margin-top:14px; display:none; }
+    .market-bar.visible { display:block; animation:fadeUp .3s ease; }
+    .market-bar-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .market-label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+    .market-price { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700; color:var(--gold); }
+    .market-listings { display:flex; flex-direction:column; gap:5px; max-height:150px; overflow-y:auto; }
+    .market-listings::-webkit-scrollbar { width:3px; }
+    .market-listings::-webkit-scrollbar-thumb { background:var(--border2); }
+    .listing-item { display:flex; align-items:center; gap:8px; padding:7px 8px; background:var(--bg2); border-radius:2px; font-size:12px; border:1px solid transparent; transition:border-color .15s; cursor:pointer; }
+    .listing-item:hover { border-color:var(--border2); }
+    .listing-thumb { width:24px; height:24px; object-fit:contain; border-radius:2px; background:var(--bg3); flex-shrink:0; }
+    .listing-title { flex:1; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .listing-price { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--gold); white-space:nowrap; }
+    .listing-cond { font-size:9px; font-family:'IBM Plex Mono',monospace; padding:2px 5px; border-radius:2px; background:var(--border); color:var(--muted); flex-shrink:0; }
+
+    /* RESULT PANEL */
+    .result-panel { display:flex; flex-direction:column; gap:18px; opacity:0; pointer-events:none; transition:opacity .4s; }
+    .result-panel.visible { opacity:1; pointer-events:all; }
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; border:1px dashed var(--border2); border-radius:4px; text-align:center; padding:36px; }
+    .empty-state.hidden { display:none; }
+    .empty-icon { font-size:44px; margin-bottom:14px; filter:grayscale(.5) opacity(.5); }
+    .empty-title { font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; color:var(--muted); margin-bottom:7px; }
+    .empty-sub { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--border2); line-height:1.6; }
+
+    /* RCARD */
+    .rcard { background:var(--bg2); border:1px solid var(--border); border-radius:4px; overflow:hidden; position:relative; }
+    .rcard-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:9px; }
+    .rcard-tag { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; }
+    .rcard-tag.cyan { color:var(--neon); }
+    .rcard-tag.gold { color:var(--gold); }
+    .rcard-tag.green { color:var(--green); }
+    .rcard-body { padding:18px; }
+    .stat-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+    .stat-row:last-child { border-bottom:none; }
+    .stat-label { color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; }
+    .stat-val { font-family:'IBM Plex Mono',monospace; font-weight:500; }
+    .c-neon { color:var(--neon); }
+    .c-gold { color:var(--gold); }
+    .c-green { color:var(--green); }
+    .c-red { color:var(--red); }
+    .c-muted { color:var(--muted); }
+    .depr-item { margin-bottom:13px; }
+    .depr-item-top { display:flex; justify-content:space-between; font-size:12px; font-family:'IBM Plex Mono',monospace; margin-bottom:5px; }
+    .depr-item-top .dlabel { color:var(--muted); }
+    .depr-bar-bg { background:var(--border); border-radius:2px; height:5px; overflow:hidden; }
+    .depr-bar { height:100%; border-radius:2px; transition:width 1s cubic-bezier(.16,1,.3,1); }
+    .timeline { display:flex; gap:0; border-radius:3px; overflow:hidden; height:22px; margin:12px 0 6px; }
+    .timeline-seg { display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:500; transition:flex 1s cubic-bezier(.16,1,.3,1); overflow:hidden; }
+    .seg-time { background:rgba(255,59,92,.45); color:#ffa0b4; }
+    .seg-wear { background:rgba(245,197,24,.45); color:#ffe08a; }
+    .seg-final { background:rgba(0,255,255,.3); color:#aff; }
+    .price-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    @media(max-width:600px){ .price-grid{grid-template-columns:1fr} }
+    .price-card { border-radius:4px; padding:16px 14px; text-align:center; position:relative; overflow:hidden; cursor:default; transition:transform .2s; }
+    .price-card:hover { transform:translateY(-3px); }
+    .price-card.rapida { background:rgba(255,45,107,0.07); border:1px solid rgba(255,45,107,.25); }
+    .price-card.justo { background:rgba(0,255,255,0.05); border:1px solid rgba(0,255,255,.3); box-shadow:0 0 20px rgba(0,255,255,.06); }
+    .price-card.maximo { background:rgba(245,197,24,0.05); border:1px solid rgba(245,197,24,.22); }
+    .pc-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+    .price-card.rapida .pc-label { color:var(--red); }
+    .price-card.justo .pc-label { color:var(--neon); }
+    .price-card.maximo .pc-label { color:var(--gold); }
+    .pc-icon { font-size:20px; margin-bottom:6px; }
+    .pc-price { font-family:'Orbitron',sans-serif; font-size:19px; font-weight:700; margin-bottom:5px; }
+    .price-card.rapida .pc-price { color:var(--red); }
+    .price-card.justo .pc-price { color:var(--neon); }
+    .price-card.maximo .pc-price { color:var(--gold); }
+    .pc-desc { font-size:11px; color:var(--muted); line-height:1.5; }
+    .price-card.justo::before { content:'RECOMENDADO'; position:absolute; top:0; left:50%; transform:translateX(-50%); font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.5px; background:var(--neon); color:var(--bg); padding:3px 9px; border-radius:0 0 4px 4px; font-weight:700; }
+    .nota { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); line-height:1.7; padding:11px 14px; background:var(--bg3); border-left:2px solid var(--neon2); border-radius:0 3px 3px 0; margin-top:14px; }
+    .divider { display:flex; align-items:center; gap:10px; margin:18px 0; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; }
+    .divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* MEU PC */
+    .meupc-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:24px; }
+    .meupc-title { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:800; letter-spacing:-.5px; }
+    .meupc-title span { color:var(--neon); }
+    .meupc-sub { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); margin-top:4px; }
+    .peca-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+
+    /* PECA CARD */
+    .peca-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; overflow:hidden; position:relative; transition:border-color .2s; }
+    .peca-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:3px; background:var(--border2); transition:background .3s; }
+    .peca-card.calculada::before { background:linear-gradient(to bottom,var(--neon2),var(--green)); }
+    .peca-card.calculando::before { background:var(--gold); animation:blink 1s ease infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .peca-card-header { display:flex; align-items:center; gap:12px; padding:13px 16px; cursor:pointer; user-select:none; }
+    .peca-card-header:hover { background:rgba(255,255,255,0.02); }
+    .peca-num { width:26px; height:26px; border-radius:50%; background:var(--bg3); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:700; color:var(--muted); flex-shrink:0; }
+    .peca-card.calculada .peca-num { background:rgba(0,255,255,0.1); border-color:var(--neon); color:var(--neon); }
+    .peca-info { flex:1; min-width:0; }
+    .peca-nome { font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .peca-nome.placeholder { color:var(--muted); font-style:italic; font-weight:400; }
+    .peca-meta { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px; }
+    .peca-valor { text-align:right; flex-shrink:0; }
+    .peca-valor .v-justo { font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--neon); }
+    .peca-valor .v-label { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+    .peca-chevron { font-size:12px; color:var(--muted); flex-shrink:0; transition:transform .2s; }
+    .peca-card.open .peca-chevron { transform:rotate(180deg); }
+    .peca-form-body { display:none; padding:0 16px 16px; border-top:1px solid var(--border); background:rgba(19,21,42,0.6); }
+    .peca-card.open .peca-form-body { display:block; }
+    .pf-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    @media(max-width:600px){ .pf-grid{grid-template-columns:1fr} }
+    .pf-grid .full { grid-column:1/-1; }
+    .pf-row { display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    .peca-market { background:var(--bg3); border:1px solid var(--border2); border-radius:3px; padding:10px 12px; margin-top:10px; display:none; }
+    .peca-market.visible { display:block; }
+    .pm-top { display:flex; justify-content:space-between; align-items:center; }
+    .pm-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+    .pm-price { font-family:'Orbitron',sans-serif; font-size:15px; color:var(--gold); font-weight:700; }
+    .pm-count { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); }
+
+    /* PROGRESS */
+    .progress-wrap { width:100%; background:var(--border); border-radius:2px; height:3px; margin-bottom:8px; display:none; }
+    .progress-wrap.visible { display:block; }
+    .progress-bar { height:3px; border-radius:2px; background:linear-gradient(90deg,var(--neon2),var(--neon)); width:0%; transition:width .3s ease; }
+
+    /* RESUMO */
+    .resumo-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; overflow:hidden; position:relative; margin-top:8px; }
+    .resumo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--green),var(--neon)); }
+    .resumo-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .resumo-title { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--green); }
+    .resumo-totais { display:flex; gap:0; flex-wrap:nowrap; border-bottom:1px solid var(--border); overflow-x:auto; }
+    .rt-block { padding:20px 24px; text-align:center; border-right:1px solid var(--border); flex-shrink:0; }
+    .rt-block:last-child { border-right:none; }
+    .rt-label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; white-space:nowrap; }
+    .rt-val { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; }
+    .rt-val.gold { color:var(--gold); }
+    .rt-val.neon { color:var(--neon); }
+    .rt-val.green { color:var(--green); }
+    .rt-val.red { color:var(--red); }
+    .resumo-table { width:100%; border-collapse:collapse; }
+    .resumo-table th { text-align:left; padding:9px 16px; background:var(--bg3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+    .resumo-table td { padding:10px 16px; border-bottom:1px solid var(--border); font-size:13px; }
+    .resumo-table tr:last-child td { border-bottom:none; }
+    .resumo-table tr:hover td { background:rgba(255,255,255,0.015); }
+    .tag-cond { font-family:'IBM Plex Mono',monospace; font-size:10px; padding:2px 7px; border-radius:2px; white-space:nowrap; }
+    .tag-novo { background:rgba(15,250,142,.12); color:var(--green); }
+    .tag-leve { background:rgba(0,255,255,.1); color:var(--neon); }
+    .tag-moderado { background:rgba(245,197,24,.1); color:var(--gold); }
+    .tag-estetico { background:rgba(255,59,92,.1); color:var(--red); }
+    .resumo-precos { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); }
+    @media(max-width:600px){ .resumo-precos{grid-template-columns:1fr} }
+    .rp-block { padding:20px 16px; text-align:center; border-right:1px solid var(--border); }
+    .rp-block:last-child { border-right:none; }
+    .rp-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+    .rp-icon { font-size:20px; margin-bottom:6px; }
+    .rp-val { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:700; margin-bottom:4px; }
+    .rp-desc { font-size:11px; color:var(--muted); }
+    .rp-rapida .rp-label,.rp-rapida .rp-val { color:var(--red); }
+    .rp-justo .rp-label,.rp-justo .rp-val { color:var(--neon); }
+    .rp-maximo .rp-label,.rp-maximo .rp-val { color:var(--gold); }
+
+    footer { position:relative; z-index:5; text-align:center; padding:24px 20px; border-top:1px solid var(--border); color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; }
+    footer a { color:var(--neon2); text-decoration:none; }
+  </style>
+</head>
+<body>
+
+
+
+<header>
+  <a class="logo" href="#"><div class="logo-icon">⬡</div><div class="logo-text">Calcula<span>Hardware</span></div></a>
+  <div class="header-tag">Mercado BR · v3.0</div>
+</header>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('single',this)">🔍 Peça Única</button>
+  <button class="tab-btn" onclick="switchTab('meupc',this)">🖥️ Meu PC Completo <span class="tab-badge" id="badge-pecas">0</span></button>
+</div>
+
+<!-- ══ ABA: PEÇA ÚNICA ══ -->
+<div class="page active" id="page-single">
+  <div class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-eyebrow">// Precificador inteligente</div>
+    <h1 class="hero-title">Quanto vale seu<br/><span class="line2">hardware usado?</span></h1>
+    <p class="hero-sub">Busca o preço real no Mercado Livre e aplica depreciação por tempo e estado de conservação.</p>
+  </div>
+  <div class="app-shell">
+    <div class="card" style="opacity:0;animation:fadeUp .6s .8s forwards">
+      <div class="card-header"><div class="card-title">// Dados da peça</div><div class="card-sub">preencha e consulte o mercado</div></div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label"><span class="num">1</span> nome / modelo da peça</div>
+          <input type="text" id="nome" placeholder="Ex: RTX 3060 12GB, Ryzen 5 5600X…" autocomplete="off"/>
+        </div>
+        <button class="btn-search" id="btn-buscar" onclick="buscarMercado()">⟳ BUSCAR NO MERCADO LIVRE</button>
+        <div class="status-msg" id="status-busca"><div class="spinner"></div><span id="status-txt">Consultando…</span></div>
+        <div class="err-msg" id="err-busca"></div>
+        <div class="market-bar" id="market-bar">
+          <div class="market-bar-top">
+            <div><div class="market-label">Valor base (média)</div><div class="market-price" id="market-price">R$ —</div></div>
+            <div style="text-align:right"><div class="market-label">Resultados</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text)" id="market-count">—</div></div>
+          </div>
+          <div class="market-listings" id="market-listings"></div>
+        </div>
+        <div class="divider">parâmetros de uso</div>
+        <div class="field">
+          <div class="field-label"><span class="num">2</span> tempo de uso</div>
+          <div class="row-2">
+            <div><input type="number" id="anos" min="0" max="20" value="0"/><div class="field-hint">ANOS</div></div>
+            <div><input type="number" id="meses" min="0" max="11" value="0"/><div class="field-hint">MESES (0–11)</div></div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="num">3</span> estado de conservação</div>
+          <select id="conservacao">
+            <option value="novo">✨ Como novo — sem marcas visíveis</option>
+            <option value="leve">🟢 Marcas de uso leves</option>
+            <option value="moderado">🟡 Desgaste moderado</option>
+            <option value="estetico">🔴 Defeito estético / reparo</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="num">4</span> valor base (R$) — ajuste se quiser</div>
+          <input type="number" id="valor-base" placeholder="Preenchido pela busca ou informe manualmente" min="1"/>
+        </div>
+        <button class="btn-calc" onclick="calcular()">⚡ CALCULAR PREÇO SUGERIDO</button>
+      </div>
+    </div>
+    <div>
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🖥️</div>
+        <div class="empty-title">Aguardando dados</div>
+        <div class="empty-sub">Busque sua peça e clique em calcular<br/>para ver o relatório de precificação.</div>
+      </div>
+      <div class="result-panel" id="result-panel">
+        <div class="rcard">
+          <div class="rcard-header"><span style="font-size:15px">📊</span><span class="rcard-tag cyan">Valor de Mercado</span></div>
+          <div class="rcard-body">
+            <div class="stat-row"><span class="stat-label">Modelo</span><span class="stat-val c-neon" id="r-nome">—</span></div>
+            <div class="stat-row"><span class="stat-label">Preço base de mercado</span><span class="stat-val c-gold" id="r-base">—</span></div>
+            <div class="stat-row"><span class="stat-label">Tempo de uso</span><span class="stat-val c-muted" id="r-tempo">—</span></div>
+            <div class="stat-row"><span class="stat-label">Estado de conservação</span><span class="stat-val" id="r-conservacao">—</span></div>
+          </div>
+        </div>
+        <div class="rcard">
+          <div class="rcard-header"><span style="font-size:15px">📉</span><span class="rcard-tag gold">Relatório de Depreciação</span></div>
+          <div class="rcard-body">
+            <div class="depr-item"><div class="depr-item-top"><span class="dlabel">⏱ Desconto por tempo</span><span id="r-pct-tempo">—</span></div><div class="depr-bar-bg"><div class="depr-bar" id="bar-tempo" style="width:0%;background:var(--red)"></div></div></div>
+            <div class="depr-item"><div class="depr-item-top"><span class="dlabel">🔧 Desconto por desgaste</span><span id="r-pct-desgaste">—</span></div><div class="depr-bar-bg"><div class="depr-bar" id="bar-desgaste" style="width:0%;background:var(--gold)"></div></div></div>
+            <div class="depr-item"><div class="depr-item-top"><span class="dlabel">📦 Total depreciado</span><span class="c-red" id="r-pct-total">—</span></div><div class="depr-bar-bg"><div class="depr-bar" id="bar-total" style="width:0%;background:linear-gradient(90deg,var(--red),var(--gold))"></div></div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px">Composição do valor</div><div class="timeline" id="timeline"><div class="timeline-seg seg-time" id="tl-time" style="flex:0"></div><div class="timeline-seg seg-wear" id="tl-wear" style="flex:0"></div><div class="timeline-seg seg-final" id="tl-final" style="flex:1"></div></div></div>
+            <div class="stat-row" style="margin-top:12px"><span class="stat-label">Valor após tempo</span><span class="stat-val c-neon" id="r-val-tempo">—</span></div>
+            <div class="stat-row"><span class="stat-label">Valor após desgaste</span><span class="stat-val c-green" id="r-val-final">—</span></div>
+          </div>
+        </div>
+        <div class="rcard">
+          <div class="rcard-header"><span style="font-size:15px">💰</span><span class="rcard-tag green">Preços Sugeridos</span></div>
+          <div class="rcard-body">
+            <div class="price-grid">
+              <div class="price-card rapida"><div class="pc-label">Venda Rápida</div><div class="pc-icon">⚡</div><div class="pc-price" id="p-rapida">—</div><div class="pc-desc">Vende em dias.</div></div>
+              <div class="price-card justo"><div class="pc-label">Preço Justo</div><div class="pc-icon">🎯</div><div class="pc-price" id="p-justo">—</div><div class="pc-desc">Melhor equilíbrio.</div></div>
+              <div class="price-card maximo"><div class="pc-label">Máximo</div><div class="pc-icon">🏆</div><div class="pc-price" id="p-maximo">—</div><div class="pc-desc">Com margem para negociar.</div></div>
+            </div>
+            <div class="nota">💡 Valores baseados na média do Mercado Livre + fórmula de depreciação. Ajuste conforme sua região e urgência.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ABA: MEU PC ══ -->
+<div class="page" id="page-meupc">
+  <div class="meupc-shell">
+    <div class="meupc-header">
+      <div>
+        <div class="meupc-title">Meu PC <span>Completo</span></div>
+        <div class="meupc-sub">// Adicione todas as peças e calcule o valor total do setup de uma vez</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-outline" onclick="limparTudo()">🗑 Limpar tudo</button>
+        <button class="btn-batch" id="btn-batch" onclick="calcularTudo()" disabled>⚡ CALCULAR TUDO</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="status-msg" id="status-batch" style="margin-bottom:10px"><div class="spinner"></div><span id="status-batch-txt">Buscando preços…</span></div>
+
+    <div class="peca-list" id="peca-list"></div>
+
+    <button class="btn-add-peca" onclick="adicionarPeca()"><span style="font-size:18px;line-height:1">+</span> ADICIONAR PEÇA</button>
+
+    <!-- Resumo -->
+    <div id="resumo-section" style="display:none;margin-top:32px">
+      <div class="resumo-card">
+        <div class="resumo-header">
+          <div class="resumo-title">📋 Relatório do Setup</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)" id="resumo-data"></div>
+        </div>
+        <div class="resumo-totais">
+          <div class="rt-block"><div class="rt-label">Valor original (novo)</div><div class="rt-val gold" id="res-base-total">—</div></div>
+          <div class="rt-block"><div class="rt-label">Depreciação total</div><div class="rt-val red" id="res-depr-total">—</div></div>
+          <div class="rt-block"><div class="rt-label">Valor atual estimado</div><div class="rt-val neon" id="res-atual-total">—</div></div>
+          <div class="rt-block"><div class="rt-label">Peças calculadas</div><div class="rt-val green" id="res-qtd">—</div></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="resumo-table">
+            <thead><tr><th>#</th><th>Peça</th><th>Estado</th><th>Uso</th><th>Base (novo)</th><th>Depreciação</th><th>Valor atual</th><th>Preço justo</th></tr></thead>
+            <tbody id="resumo-tbody"></tbody>
+          </table>
+        </div>
+        <div class="resumo-precos">
+          <div class="rp-block rp-rapida"><div class="rp-label">⚡ Venda Rápida</div><div class="rp-val" id="res-rapida">—</div><div class="rp-desc">Desconto agressivo, vende rápido</div></div>
+          <div class="rp-block rp-justo"><div class="rp-label">🎯 Preço Justo ★</div><div class="rp-val" id="res-justo">—</div><div class="rp-desc">Melhor equilíbrio recomendado</div></div>
+          <div class="rp-block rp-maximo"><div class="rp-label">🏆 Máximo</div><div class="rp-val" id="res-maximo">—</div><div class="rp-desc">Com margem para pechinchar</div></div>
+        </div>
+        <div style="padding:14px 20px">
+          <div class="nota">💡 Para vender peças separadamente, use os valores da coluna "Preço justo" na tabela. Para vender o PC inteiro, use os valores acima.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  CalculaHardware BR &nbsp;·&nbsp; Dados via <a href="https://developers.mercadolivre.com.br" target="_blank">API Mercado Livre</a> &nbsp;·&nbsp; Simulação para referência — preços reais podem variar
+</footer>
+
+<script>
+/* ══ HELPERS ══ */
+const fmt = v => 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const $ = id => document.getElementById(id);
+const setTxt = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+function setBar(id,pct){ const e=$(id); if(!e) return; e.style.width='0%'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ e.style.width=Math.min(pct,100)+'%'; })); }
+function mediaIQR(arr){ if(!arr.length) return null; const s=[...arr].sort((a,b)=>a-b); const q1=s[Math.floor(s.length*.25)],q3=s[Math.floor(s.length*.75)],iqr=q3-q1; const f=s.filter(v=>v>=q1-1.5*iqr&&v<=q3+1.5*iqr); return f.reduce((a,v)=>a+v,0)/f.length; }
+
+function calcularLocal(vb,anos,meses,conservacao){
+  const faixas=[{ate:1,taxa:.22},{ate:2,taxa:.15},{ate:3,taxa:.12},{ate:99,taxa:.08}];
+  const cm={novo:{mult:1,label:'Como novo',d:0},leve:{mult:.9,label:'Marcas leves',d:.1},moderado:{mult:.75,label:'Desgaste moderado',d:.25},estetico:{mult:.55,label:'Defeito estético',d:.45}};
+  let v=vb;
+  for(let a=1;a<=anos;a++){ const f=faixas.find(x=>a<=x.ate); v*=(1-f.taxa); }
+  if(meses>0) v*=(1-0.012*meses);
+  const pctT=((vb-v)/vb)*100, cfg=cm[conservacao], vf=v*cfg.mult;
+  return { valorBase:Math.round(vb), valorAposTempo:Math.round(v), valorFinal:Math.round(vf), percentualTempo:+pctT.toFixed(1), percentualDesgaste:+(cfg.d*100).toFixed(1), percentualTotal:+(((vb-vf)/vb)*100).toFixed(1), conservacaoLabel:cfg.label, precos:{rapida:Math.round(vf*.92),justo:Math.round(vf),maximo:Math.round(vf*1.1)}, detalhes:{anos,meses,conservacao} };
+}
+
+async function buscarML(query){
+  try {
+    const r = await fetch(`/api/buscar?q=${encodeURIComponent(query)}`);
+    const d = await r.json();
+    if (!r.ok || !d.encontrado)
+      throw new Error(d.erro || d.mensagem || 'Sem resultados');
+    return { base: d.valorBase, total: d.totalResultados, lista: d.anuncios };
+  } catch(e) {
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))
+      throw new Error('Sem conexão. Verifique sua internet.');
+    throw e;
+  }
+}
+
+
+
+/* ══ TAB ══ */
+function switchTab(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  $('page-'+id).classList.add('active'); btn.classList.add('active');
+}
+
+/* ══ PEÇA ÚNICA ══ */
+async function buscarMercado(){
+  const nome=$('nome').value.trim();
+  if(!nome){ showErr('err-busca','Informe o nome/modelo.'); return; }
+  hideErr('err-busca'); showSt('status-busca','status-txt','Consultando Mercado Livre…');
+  $('btn-buscar').classList.add('loading'); $('market-bar').classList.remove('visible');
+  try {
+    const r=await buscarML(nome);
+    $('valor-base').value=r.base;
+    setTxt('market-price',fmt(r.base)); setTxt('market-count',`${r.total} anúncios`);
+    const le=$('market-listings'); le.innerHTML='';
+    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail}" onerror="this.style.display='none'"/><span class="listing-title">${a.title}</span><span class="listing-cond">${a.condition==='new'?'Novo':'Usado'}</span><span class="listing-price">${fmt(a.price)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
+    $('market-bar').classList.add('visible');
+  } catch(e){
+    const msg = e.message.includes('Todos os métodos')
+      ? e.message
+      : '⚠ ' + e.message + ' — Informe o Valor Base manualmente no campo abaixo e clique em Calcular.';
+    showErr('err-busca', msg);
+  }
+  finally{ hideSt('status-busca'); $('btn-buscar').classList.remove('loading'); }
+}
+
+function calcular(){
+  const nome=$('nome').value.trim(), anos=parseInt($('anos').value)||0, meses=parseInt($('meses').value)||0, conserv=$('conservacao').value, vb=parseFloat($('valor-base').value);
+  if(!vb||vb<=0){ showErr('err-busca','Busque a peça primeiro ou informe o Valor Base.'); return; }
+  hideErr('err-busca');
+  renderResultado(calcularLocal(vb,anos,meses,conserv),nome);
+}
+
+function renderResultado(d,nome){
+  const ts=d.detalhes.anos>0||d.detalhes.meses>0?`${d.detalhes.anos}a ${d.detalhes.meses}m`:'Novo';
+  setTxt('r-nome',nome||'Componente'); setTxt('r-base',fmt(d.valorBase)); setTxt('r-tempo',ts);
+  const ce=$('r-conservacao'); ce.textContent=d.conservacaoLabel; ce.className='stat-val';
+  ce.classList.add({novo:'c-green',leve:'c-neon',moderado:'c-gold',estetico:'c-red'}[d.detalhes.conservacao]||'');
+  setTxt('r-pct-tempo',`−${d.percentualTempo}%`); setTxt('r-pct-desgaste',`−${d.percentualDesgaste}%`); setTxt('r-pct-total',`−${d.percentualTotal}%`);
+  setTxt('r-val-tempo',fmt(d.valorAposTempo)); setTxt('r-val-final',fmt(d.valorFinal));
+  setBar('bar-tempo',d.percentualTempo); setBar('bar-desgaste',d.percentualDesgaste); setBar('bar-total',d.percentualTotal);
+  const pF=((d.valorFinal/d.valorBase)*100).toFixed(1),pT=d.percentualTempo.toFixed(1),pW=d.percentualDesgaste.toFixed(1);
+  $('tl-time').style.flex=pT; $('tl-wear').style.flex=pW; $('tl-final').style.flex=pF;
+  $('tl-time').textContent=pT>5?`−${pT}%`:''; $('tl-wear').textContent=pW>5?`−${pW}%`:''; $('tl-final').textContent=pF>5?`${pF}%`:'';
+  setTxt('p-rapida',fmt(d.precos.rapida)); setTxt('p-justo',fmt(d.precos.justo)); setTxt('p-maximo',fmt(d.precos.maximo));
+  $('empty-state').classList.add('hidden'); $('result-panel').classList.add('visible');
+  $('result-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('nome').addEventListener('keydown',e=>{ if(e.key==='Enter') buscarMercado(); });
+
+/* ══ MEU PC ══ */
+let pecas=[], nextId=1;
+const COPTS=[{v:'novo',l:'✨ Como novo'},{v:'leve',l:'🟢 Marcas leves'},{v:'moderado',l:'🟡 Desgaste moderado'},{v:'estetico',l:'🔴 Defeito estético'}];
+
+function adicionarPeca(d={}){
+  const p={id:nextId++,nome:'',anos:0,meses:0,conservacao:'leve',valorBase:null,resultado:null,...d};
+  pecas.push(p);
+  const list=$('peca-list'), div=document.createElement('div');
+  div.className='peca-card'; div.dataset.pecaId=p.id;
+  div.innerHTML=`
+    <div class="peca-card-header" onclick="togglePeca(${p.id})">
+      <div class="peca-num">${p.id}</div>
+      <div class="peca-info">
+        <div class="peca-nome placeholder" id="pn-${p.id}">Peça ${p.id} — clique para preencher</div>
+        <div class="peca-meta" id="pm-${p.id}">0a 0m · Marcas leves</div>
+      </div>
+      <div class="peca-valor"><div class="v-justo" id="pv-${p.id}">—</div><div class="v-label">Preço justo</div></div>
+      <div class="peca-chevron">▼</div>
+    </div>
+    <div class="peca-form-body">
+      <div class="pf-grid">
+        <div class="full">
+          <div class="field-label" style="margin-top:0">Nome / Modelo</div>
+          <input type="text" id="pf-nome-${p.id}" placeholder="Ex: RTX 3060, i7-12700K…" oninput="pfField(${p.id},'nome',this.value)" autocomplete="off"/>
+        </div>
+        <div>
+          <div class="field-label">Anos de uso</div>
+          <input type="number" id="pf-anos-${p.id}" min="0" max="20" value="0" oninput="pfField(${p.id},'anos',+this.value)"/>
+        </div>
+        <div>
+          <div class="field-label">Meses (0–11)</div>
+          <input type="number" id="pf-meses-${p.id}" min="0" max="11" value="0" oninput="pfField(${p.id},'meses',+this.value)"/>
+        </div>
+        <div class="full">
+          <div class="field-label">Estado de conservação</div>
+          <select id="pf-conserv-${p.id}" onchange="pfField(${p.id},'conservacao',this.value)">
+            ${COPTS.map(o=>`<option value="${o.v}"${p.conservacao===o.v?' selected':''}>${o.l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="full">
+          <div class="field-label">Valor base R$ — opcional (busca automática se vazio)</div>
+          <input type="number" id="pf-vbase-${p.id}" min="1" placeholder="Deixe em branco para buscar" oninput="pfField(${p.id},'valorBase',this.value?+this.value:null)"/>
+        </div>
+      </div>
+      <div class="pf-row">
+        <button class="btn-search" style="flex:1;padding:10px;font-size:10px" onclick="buscarPeca(${p.id})">⟳ BUSCAR PREÇO</button>
+        <button class="btn-danger" onclick="removerPeca(${p.id})">✕ Remover</button>
+      </div>
+      <div class="status-msg" id="pst-${p.id}" style="margin-top:8px"><div class="spinner"></div><span id="pst-txt-${p.id}">Buscando…</span></div>
+      <div class="err-msg" id="perr-${p.id}"></div>
+      <div class="peca-market" id="pmarket-${p.id}">
+        <div class="pm-top"><div><div class="pm-label">Média de mercado</div><div class="pm-price" id="pmp-${p.id}">—</div></div><div class="pm-count" id="pmc-${p.id}">—</div></div>
+      </div>
+    </div>`;
+  list.appendChild(div);
+  atualizarBadge(); atualizarBtnBatch();
+  setTimeout(()=>{ div.classList.add('open'); $(`pf-nome-${p.id}`)?.focus(); },60);
+}
+
+function togglePeca(id){ document.querySelector(`[data-peca-id="${id}"]`)?.classList.toggle('open'); }
+
+function pfField(id,field,val){
+  const p=pecas.find(x=>x.id===id); if(!p) return;
+  p[field]=val;
+  if(field==='nome'){
+    const ne=$(`pn-${id}`);
+    if(val?.trim()){ ne.textContent=val; ne.classList.remove('placeholder'); }
+    else { ne.textContent=`Peça ${id} — clique para preencher`; ne.classList.add('placeholder'); }
+  }
+  const cl=COPTS.find(o=>o.v===p.conservacao)?.l||'';
+  $(`pm-${id}`).textContent=`${p.anos}a ${p.meses}m · ${cl}`;
+  atualizarBtnBatch();
+}
+
+async function buscarPeca(id){
+  const p=pecas.find(x=>x.id===id); if(!p) return;
+  const nome=$(`pf-nome-${id}`)?.value.trim();
+  if(!nome){ showErr(`perr-${id}`,'Informe o nome da peça.'); return; }
+  hideErr(`perr-${id}`); showSt(`pst-${id}`,`pst-txt-${id}`,'Buscando no Mercado Livre…');
+  const btn=document.querySelector(`[data-peca-id="${id}"] .btn-search`);
+  if(btn) btn.classList.add('loading');
+  try {
+    const r=await buscarML(nome);
+    p.valorBase=r.base; $(`pf-vbase-${id}`).value=r.base;
+    setTxt(`pmp-${id}`,fmt(r.base)); setTxt(`pmc-${id}`,`${r.total} anúncios`);
+    $(`pmarket-${id}`).classList.add('visible');
+    document.querySelector(`[data-peca-id="${id}"]`)?.classList.add('calculada');
+  } catch(e){ showErr(`perr-${id}`,'⚠ '+e.message); }
+  finally{ hideSt(`pst-${id}`); if(btn) btn.classList.remove('loading'); atualizarBtnBatch(); }
+}
+
+function removerPeca(id){
+  pecas=pecas.filter(p=>p.id!==id);
+  const el=document.querySelector(`[data-peca-id="${id}"]`);
+  if(el){ el.style.opacity='0'; el.style.transform='translateX(-16px)'; el.style.transition='all .2s'; setTimeout(()=>el.remove(),200); }
+  atualizarBadge(); atualizarBtnBatch();
+}
+
+function atualizarBadge(){ setTxt('badge-pecas',pecas.length||'0'); }
+function atualizarBtnBatch(){ $('btn-batch').disabled=!pecas.some(p=>(p.nome||'').trim()); }
+
+async function calcularTudo(){
+  const validas=pecas.filter(p=>(p.nome||'').trim());
+  if(!validas.length) return;
+  $('btn-batch').disabled=true;
+  showSt('status-batch','status-batch-txt','Iniciando cálculo em lote…');
+  $('progress-wrap').classList.add('visible'); $('progress-bar').style.width='0%';
+  let done=0;
+  for(const p of validas){
+    const card=document.querySelector(`[data-peca-id="${p.id}"]`);
+    if(card) card.classList.add('calculando');
+    setTxt('status-batch-txt',`Buscando: ${p.nome}…`);
+    try {
+      if(!p.valorBase){
+        const r=await buscarML(p.nome); p.valorBase=r.base;
+        $(`pf-vbase-${p.id}`).value=r.base; setTxt(`pmp-${p.id}`,fmt(r.base)); $(`pmarket-${p.id}`).classList.add('visible');
+      }
+      const a=parseInt($(`pf-anos-${p.id}`)?.value)||0, m=parseInt($(`pf-meses-${p.id}`)?.value)||0, c=$(`pf-conserv-${p.id}`)?.value||'leve';
+      p.resultado=calcularLocal(p.valorBase,a,m,c);
+      setTxt(`pv-${p.id}`,fmt(p.resultado.precos.justo));
+      if(card){ card.classList.remove('calculando'); card.classList.add('calculada'); }
+    } catch(e){
+      showErr(`perr-${p.id}`,'⚠ '+e.message);
+      if(card) card.classList.remove('calculando');
+    }
+    done++; $('progress-bar').style.width=((done/validas.length)*100)+'%';
+    await new Promise(r=>setTimeout(r,150));
+  }
+  hideSt('status-batch'); $('btn-batch').disabled=false;
+  const com=validas.filter(p=>p.resultado);
+  if(com.length) renderResumo(com);
+}
+
+function renderResumo(lista){
+  const tb=lista.reduce((s,p)=>s+p.resultado.valorBase,0);
+  const tf=lista.reduce((s,p)=>s+p.resultado.valorFinal,0);
+  setTxt('res-base-total',fmt(tb)); setTxt('res-depr-total',`−${fmt(tb-tf)}`); setTxt('res-atual-total',fmt(tf)); setTxt('res-qtd',lista.length+' peças');
+  setTxt('res-rapida',fmt(Math.round(tf*.92))); setTxt('res-justo',fmt(tf)); setTxt('res-maximo',fmt(Math.round(tf*1.1)));
+  setTxt('resumo-data',new Date().toLocaleDateString('pt-BR'));
+  const tbody=$('resumo-tbody'); tbody.innerHTML='';
+  const tc={novo:'tag-novo',leve:'tag-leve',moderado:'tag-moderado',estetico:'tag-estetico'};
+  lista.forEach((p,i)=>{
+    const d=p.resultado, tu=d.detalhes.anos>0||d.detalhes.meses>0?`${d.detalhes.anos}a ${d.detalhes.meses}m`:'Novo';
+    tbody.innerHTML+=`<tr><td style="color:var(--muted);font-family:'IBM Plex Mono',monospace">${i+1}</td><td style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome}</td><td><span class="tag-cond ${tc[d.detalhes.conservacao]}">${d.conservacaoLabel}</span></td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">${tu}</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--gold)">${fmt(d.valorBase)}</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--red)">−${d.percentualTotal}%</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--neon)">${fmt(d.valorFinal)}</td><td style="font-family:'Orbitron',sans-serif;color:var(--green);font-weight:700">${fmt(d.precos.justo)}</td></tr>`;
+  });
+  $('resumo-section').style.display='block';
+  setTimeout(()=>$('resumo-section').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+function limparTudo(){
+  if(!confirm('Remover todas as peças?')) return;
+  pecas=[]; nextId=1; $('peca-list').innerHTML=''; $('resumo-section').style.display='none';
+  atualizarBadge(); atualizarBtnBatch();
+}
+
+/* ══ UI helpers ══ */
+function showSt(sid,tid,msg){ setTxt(tid,msg); $(sid).classList.add('visible'); }
+function hideSt(sid){ $(sid).classList.remove('visible'); }
+function showErr(id,msg){ const e=$(id); if(e){ e.textContent=msg; e.classList.add('visible'); } }
+function hideErr(id){ const e=$(id); if(e) e.classList.remove('visible'); }
+
+/* ══ Seed: 4 peças padrão ══ */
+['GPU','CPU','RAM','SSD'].forEach(()=>adicionarPeca());
+document.querySelector('[data-peca-id="1"]')?.classList.add('open');
+</script>
+</body>
+</html>
