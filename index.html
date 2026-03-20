@@ -303,7 +303,7 @@
         <div class="err-msg" id="err-busca"></div>
         <div class="market-bar" id="market-bar">
           <div class="market-bar-top">
-            <div><div class="market-label">Valor base (média)</div><div class="market-price" id="market-price">R$ —</div></div>
+            <div><div class="market-label">Estimativa IA — Mercado BR</div><div class="market-price" id="market-price">R$ —</div></div>
             <div style="text-align:right"><div class="market-label">Resultados</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text)" id="market-count">—</div></div>
           </div>
           <div class="market-listings" id="market-listings"></div>
@@ -482,9 +482,9 @@ async function buscarMercado(){
   try {
     const r=await buscarML(nome);
     $('valor-base').value=r.base;
-    setTxt('market-price',fmt(r.base)); setTxt('market-count',`${r.total} anúncios`);
+    setTxt('market-price',fmt(r.base)); setTxt('market-count',`${r.total} referências analisadas pela IA`);
     const le=$('market-listings'); le.innerHTML='';
-    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail}" onerror="this.style.display='none'"/><span class="listing-title">${a.titulo||a.title||''}</span><span class="listing-cond">${a.frete||a.condicao||''}</span><span class="listing-price">${fmt(a.preco||a.price||0)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
+    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail||''}" onerror="this.style.display='none'"/><span class="listing-title">${a.titulo||a.title||''}</span><span class="listing-cond">${a.condicao||'Novo'}</span><span class="listing-price">${fmt(a.preco||a.price||0)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
     $('market-bar').classList.add('visible');
   } catch(e){
     const msg = e.message.includes('Todos os métodos')
@@ -570,7 +570,7 @@ function adicionarPeca(d={}){
       <div class="status-msg" id="pst-${p.id}" style="margin-top:8px"><div class="spinner"></div><span id="pst-txt-${p.id}">Buscando…</span></div>
       <div class="err-msg" id="perr-${p.id}"></div>
       <div class="peca-market" id="pmarket-${p.id}">
-        <div class="pm-top"><div><div class="pm-label">Média de mercado</div><div class="pm-price" id="pmp-${p.id}">—</div></div><div class="pm-count" id="pmc-${p.id}">—</div></div>
+        <div class="pm-top"><div><div class="pm-label">Estimativa IA — Mercado BR</div><div class="pm-price" id="pmp-${p.id}">—</div></div><div class="pm-count" id="pmc-${p.id}">—</div></div>
       </div>
     </div>`;
   list.appendChild(div);

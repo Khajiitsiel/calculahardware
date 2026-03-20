@@ -1,56 +1,73 @@
 exports.handler = async (event) => {
   const q = event.queryStringParameters ? event.queryStringParameters.q || '' : '';
   const C = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
-  const K = '3d2e6e143emsh45f8d9dfda9a045p14a51ajsnf5a0691b1e9d';
-
-  function iqr(arr) {
-    if (!arr.length) return null;
-    const s = arr.slice().sort(function(a,b){return a-b;});
-    const q1 = s[Math.floor(s.length*0.25)];
-    const q3 = s[Math.floor(s.length*0.75)];
-    const iv = q3 - q1;
-    const f = s.filter(function(v){return v >= q1-1.5*iv && v <= q3+1.5*iv;});
-    return f.reduce(function(a,v){return a+v;},0) / f.length;
-  }
 
   if (!q) return { statusCode: 400, headers: C, body: JSON.stringify({ erro: 'Parametro q obrigatorio.' }) };
 
   try {
-    const resp = await fetch(
-      'https://mercado-libre8.p.rapidapi.com/search?keyword=' + encodeURIComponent(q) + '&country=BR',
-      { headers: { 'X-RapidAPI-Key': K, 'X-RapidAPI-Host': 'mercado-libre8.p.rapidapi.com' } }
-    );
-    if (!resp.ok) throw new Error('API retornou ' + resp.status);
+    const prompt = `Você é um especialista em preços de hardware usado no mercado brasileiro.
+
+O usuário quer saber o preço médio de mercado atual de: "${q}"
+
+Responda APENAS com um JSON válido, sem texto antes ou depois, neste formato exato:
+{
+  "valorBase": 2500,
+  "totalResultados": 12,
+  "anuncios": [
+    { "titulo": "Nome do produto variação 1", "preco": 2400, "condicao": "Novo", "link": "#", "thumbnail": "" },
+    { "titulo": "Nome do produto variação 2", "preco": 2600, "condicao": "Novo", "link": "#", "thumbnail": "" },
+    { "titulo": "Nome do produto usado", "preco": 1800, "condicao": "Usado", "link": "#", "thumbnail": "" }
+  ]
+}
+
+Regras:
+- valorBase deve ser o preço médio realista em reais no mercado brasileiro HOJE
+- Liste de 3 a 6 variações realistas do produto com preços diferentes
+- Inclua versões novas e usadas quando aplicável
+- Se não reconhecer o produto, estime com base em produtos similares
+- Preços devem refletir o mercado BR atual (Mercado Livre, Kabum, Terabyte)
+- Responda SOMENTE o JSON, sem explicações`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':            'application/json',
+        'x-api-key':               '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',
+        'anthropic-version':       '2023-06-01',
+      },
+      body: JSON.stringify({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages:   [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error('Anthropic API retornou ' + resp.status + ': ' + txt);
+    }
 
     const data    = await resp.json();
-    const results = (data.Data && data.Data.products) || [];
+    const content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Resposta vazia da IA');
 
-    if (!results.length) return { statusCode: 200, headers: C, body: JSON.stringify({ encontrado: false, mensagem: 'Sem resultados para "' + q + '".' }) };
+    // Limpa possível markdown e faz parse do JSON
+    const clean  = content.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
 
-    const precos = results
-      .map(function(r){ return parseFloat(r.price) || 0; })
-      .filter(function(p){ return p >= 50; });
+    if (!result.valorBase) throw new Error('IA nao retornou valorBase');
 
-    const base = iqr(precos);
-    if (!base) return { statusCode: 200, headers: C, body: JSON.stringify({ encontrado: false, mensagem: 'Sem dados de preco suficientes.' }) };
-
-    return { statusCode: 200, headers: C, body: JSON.stringify({
-      encontrado: true,
-      valorBase: Math.round(base),
-      totalResultados: results.length,
-      anuncios: results.slice(0,6).map(function(r) {
-        return {
-          titulo:    r.title      || '',
-          preco:     parseFloat(r.price) || 0,
-          condicao:  'Novo',
-          vendedor:  r.seller     || '',
-          avaliacao: r.reviewText || '',
-          frete:     r.shippingText || '',
-          link:      r.productUrl || '#',
-          thumbnail: r.imageUrl   || ''
-        };
+    return {
+      statusCode: 200,
+      headers: C,
+      body: JSON.stringify({
+        encontrado:      true,
+        valorBase:       Math.round(result.valorBase),
+        totalResultados: result.totalResultados || result.anuncios.length,
+        anuncios:        result.anuncios || [],
+        fonte:           'IA'
       })
-    })};
+    };
 
   } catch(err) {
     return { statusCode: 500, headers: C, body: JSON.stringify({ erro: err.message }) };
