@@ -5,71 +5,58 @@ exports.handler = async (event) => {
   if (!q) return { statusCode: 400, headers: C, body: JSON.stringify({ erro: 'Parametro q obrigatorio.' }) };
 
   try {
-    const prompt = `Você é um especialista em preços de hardware usado no mercado brasileiro.
-
-O usuário quer saber o preço médio de mercado atual de: "${q}"
-
-Responda APENAS com um JSON válido, sem texto antes ou depois, neste formato exato:
-{
-  "valorBase": 2500,
-  "totalResultados": 12,
-  "anuncios": [
-    { "titulo": "Nome do produto variação 1", "preco": 2400, "condicao": "Novo", "link": "#", "thumbnail": "" },
-    { "titulo": "Nome do produto variação 2", "preco": 2600, "condicao": "Novo", "link": "#", "thumbnail": "" },
-    { "titulo": "Nome do produto usado", "preco": 1800, "condicao": "Usado", "link": "#", "thumbnail": "" }
-  ]
-}
-
-Regras:
-- valorBase deve ser o preço médio realista em reais no mercado brasileiro HOJE
-- Liste de 3 a 6 variações realistas do produto com preços diferentes
-- Inclua versões novas e usadas quando aplicável
-- Se não reconhecer o produto, estime com base em produtos similares
-- Preços devem refletir o mercado BR atual (Mercado Livre, Kabum, Terabyte)
-- Responda SOMENTE o JSON, sem explicações`;
-
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type':            'application/json',
-        'x-api-key':               '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',
-        'anthropic-version':       '2023-06-01',
+        'Content-Type':      'application/json',
+        'x-api-key':         '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',
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model:      'claude-haiku-4-5-20251001',
         max_tokens: 1000,
-        messages:   [{ role: 'user', content: prompt }],
+        messages: [{
+          role: 'user',
+          content: `Você é especialista em preços de hardware no mercado brasileiro.
+Retorne SOMENTE um JSON válido (sem markdown, sem texto extra) com o preço médio atual de: "${q}"
+
+Formato exato:
+{"valorBase":2500,"totalResultados":6,"anuncios":[{"titulo":"Produto A","preco":2400,"condicao":"Novo","link":"#","thumbnail":""},{"titulo":"Produto B usado","preco":1800,"condicao":"Usado","link":"#","thumbnail":""}]}`
+        }],
       }),
     });
 
+    const raw = await resp.text();
+
     if (!resp.ok) {
-      const txt = await resp.text();
-      throw new Error('Anthropic API retornou ' + resp.status + ': ' + txt);
+      return { statusCode: 200, headers: C, body: JSON.stringify({ erro: 'Anthropic erro ' + resp.status + ': ' + raw.slice(0,200) }) };
     }
 
-    const data    = await resp.json();
-    const content = data.content && data.content[0] && data.content[0].text;
-    if (!content) throw new Error('Resposta vazia da IA');
+    let data;
+    try { data = JSON.parse(raw); } catch(e) {
+      return { statusCode: 200, headers: C, body: JSON.stringify({ erro: 'Parse erro resposta Anthropic: ' + raw.slice(0,200) }) };
+    }
 
-    // Limpa possível markdown e faz parse do JSON
-    const clean  = content.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(clean);
+    const text = data.content && data.content[0] && data.content[0].text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
 
-    if (!result.valorBase) throw new Error('IA nao retornou valorBase');
+    let result;
+    try { result = JSON.parse(clean); } catch(e) {
+      return { statusCode: 200, headers: C, body: JSON.stringify({ erro: 'IA retornou JSON invalido: ' + clean.slice(0,200) }) };
+    }
 
-    return {
-      statusCode: 200,
-      headers: C,
-      body: JSON.stringify({
-        encontrado:      true,
-        valorBase:       Math.round(result.valorBase),
-        totalResultados: result.totalResultados || result.anuncios.length,
-        anuncios:        result.anuncios || [],
-        fonte:           'IA'
-      })
-    };
+    if (!result.valorBase) {
+      return { statusCode: 200, headers: C, body: JSON.stringify({ erro: 'IA nao retornou valorBase. Resposta: ' + clean.slice(0,200) }) };
+    }
+
+    return { statusCode: 200, headers: C, body: JSON.stringify({
+      encontrado:      true,
+      valorBase:       Math.round(result.valorBase),
+      totalResultados: result.totalResultados || (result.anuncios || []).length,
+      anuncios:        result.anuncios || [],
+    })};
 
   } catch(err) {
-    return { statusCode: 500, headers: C, body: JSON.stringify({ erro: err.message }) };
+    return { statusCode: 200, headers: C, body: JSON.stringify({ erro: 'Excecao: ' + err.message }) };
   }
 };

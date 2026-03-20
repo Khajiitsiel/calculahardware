@@ -298,7 +298,7 @@
           <div class="field-label"><span class="num">1</span> nome / modelo da peça</div>
           <input type="text" id="nome" placeholder="Ex: RTX 3060 12GB, Ryzen 5 5600X…" autocomplete="off"/>
         </div>
-        <button class="btn-search" id="btn-buscar" onclick="buscarMercado()">⟳ BUSCAR NO MERCADO LIVRE</button>
+        <button class="btn-search" id="btn-buscar" onclick="buscarMercado()">🤖 BUSCAR ESTIMATIVA DE PREÇO</button>
         <div class="status-msg" id="status-busca"><div class="spinner"></div><span id="status-txt">Consultando…</span></div>
         <div class="err-msg" id="err-busca"></div>
         <div class="market-bar" id="market-bar">
@@ -429,7 +429,7 @@
 </div>
 
 <footer>
-  CalculaHardware BR &nbsp;·&nbsp; Dados via <a href="https://developers.mercadolivre.com.br" target="_blank">API Mercado Livre</a> &nbsp;·&nbsp; Simulação para referência — preços reais podem variar
+  CalculaHardware BR &nbsp;·&nbsp; Estimativas de preço via <a href="https://anthropic.com" target="_blank">Claude AI</a> &nbsp;·&nbsp; Simulação para referência — preços reais podem variar
 </footer>
 
 <script>
@@ -477,7 +477,7 @@ function switchTab(id,btn){
 async function buscarMercado(){
   const nome=$('nome').value.trim();
   if(!nome){ showErr('err-busca','Informe o nome/modelo.'); return; }
-  hideErr('err-busca'); showSt('status-busca','status-txt','Consultando Mercado Livre…');
+  hideErr('err-busca'); showSt('status-busca','status-txt','Consultando IA para estimar preço…');
   $('btn-buscar').classList.add('loading'); $('market-bar').classList.remove('visible');
   try {
     const r=await buscarML(nome);
@@ -564,7 +564,7 @@ function adicionarPeca(d={}){
         </div>
       </div>
       <div class="pf-row">
-        <button class="btn-search" style="flex:1;padding:10px;font-size:10px" onclick="buscarPeca(${p.id})">⟳ BUSCAR PREÇO</button>
+        <button class="btn-search" style="flex:1;padding:10px;font-size:10px" onclick="buscarPeca(${p.id})">🤖 BUSCAR PREÇO</button>
         <button class="btn-danger" onclick="removerPeca(${p.id})">✕ Remover</button>
       </div>
       <div class="status-msg" id="pst-${p.id}" style="margin-top:8px"><div class="spinner"></div><span id="pst-txt-${p.id}">Buscando…</span></div>
@@ -597,7 +597,7 @@ async function buscarPeca(id){
   const p=pecas.find(x=>x.id===id); if(!p) return;
   const nome=$(`pf-nome-${id}`)?.value.trim();
   if(!nome){ showErr(`perr-${id}`,'Informe o nome da peça.'); return; }
-  hideErr(`perr-${id}`); showSt(`pst-${id}`,`pst-txt-${id}`,'Buscando no Mercado Livre…');
+  hideErr(`perr-${id}`); showSt(`pst-${id}`,`pst-txt-${id}`,'Consultando IA para estimar preço…');
   const btn=document.querySelector(`[data-peca-id="${id}"] .btn-search`);
   if(btn) btn.classList.add('loading');
   try {
