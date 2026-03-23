@@ -99,6 +99,8 @@
     .btn-batch { padding:14px 32px; background:linear-gradient(135deg,var(--green),var(--neon)); border:none; border-radius:3px; color:var(--bg); font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s; box-shadow:0 4px 20px rgba(0,255,255,0.25); }
     .btn-batch:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,255,255,.35); }
     .btn-batch:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .btn-detect { padding:14px 20px; background:transparent; border:1px solid var(--neon); border-radius:3px; color:var(--neon); font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .2s; }
+    .btn-detect:hover { background:rgba(0,255,255,0.06); box-shadow:0 0 18px rgba(0,255,255,0.15); }
     .btn-add-peca { width:100%; padding:14px; background:transparent; border:1px dashed var(--border2); border-radius:3px; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; }
     .btn-add-peca:hover { border-color:var(--neon2); color:var(--neon2); background:rgba(123,47,255,.04); }
 
@@ -298,17 +300,10 @@
           <div class="field-label"><span class="num">1</span> nome / modelo da peça</div>
           <input type="text" id="nome" placeholder="Ex: RTX 3060 12GB, Ryzen 5 5600X…" autocomplete="off"/>
         </div>
-        <button class="btn-search" id="btn-buscar" onclick="buscarMercado()">🤖 BUSCAR ESTIMATIVA DE PREÇO</button>
-        <div class="status-msg" id="status-busca"><div class="spinner"></div><span id="status-txt">Consultando…</span></div>
-        <div class="err-msg" id="err-busca"></div>
-        <div class="market-bar" id="market-bar">
-          <div class="market-bar-top">
-            <div><div class="market-label">Estimativa IA — Mercado BR</div><div class="market-price" id="market-price">R$ —</div></div>
-            <div style="text-align:right"><div class="market-label">Resultados</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text)" id="market-count">—</div></div>
-          </div>
-          <div class="market-listings" id="market-listings"></div>
-        </div>
-        <div class="divider">parâmetros de uso</div>
+        
+        
+        
+        
         <div class="field">
           <div class="field-label"><span class="num">2</span> tempo de uso</div>
           <div class="row-2">
@@ -385,12 +380,51 @@
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn-outline" onclick="limparTudo()">🗑 Limpar tudo</button>
-        <button class="btn-batch" id="btn-batch" onclick="calcularTudo()" disabled>⚡ CALCULAR TUDO</button>
+        <button class="btn-detect" onclick="mostrarDetector()">🖥️ DETECTAR MEU HARDWARE</button>
+        <button class="btn-batch" id="btn-batch" onclick="calcularTudo()">⚡ CALCULAR TUDO</button>
       </div>
     </div>
 
-    <div class="progress-wrap" id="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
-    <div class="status-msg" id="status-batch" style="margin-bottom:10px"><div class="spinner"></div><span id="status-batch-txt">Buscando preços…</span></div>
+    
+    
+
+    
+    <!-- Modal Detector de Hardware -->
+    <div id="detector-modal" style="display:none;margin-bottom:24px">
+      <div style="background:var(--bg2);border:1px solid var(--neon2);border-radius:4px;overflow:hidden;position:relative">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon2),var(--neon))"></div>
+        <div style="padding:20px 24px">
+          <div style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;color:var(--neon);text-transform:uppercase;margin-bottom:6px">// Detectar Hardware</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:16px">Siga os passos abaixo para detectar automaticamente os componentes do seu PC</div>
+
+          <div style="margin-bottom:16px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);margin-bottom:8px">
+              <span style="color:var(--neon2)">Passo 1</span> — Pressione <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">Win + R</kbd>, digite <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">cmd</kbd> e pressione Enter
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);margin-bottom:8px">
+              <span style="color:var(--neon2)">Passo 2</span> — Copie e cole o comando abaixo no CMD e pressione Enter:
+            </div>
+            <div style="position:relative">
+              <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--green);word-break:break-all;line-height:1.6" id="cmd-text">powershell -command "Write-Host '=CPU='; Get-CimInstance Win32_Processor | Select -ExpandProperty Name; Write-Host '=GPU='; Get-CimInstance Win32_VideoController | Select -ExpandProperty Name; Write-Host '=RAM='; (Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum/1GB; Write-Host '=DISCO='; Get-CimInstance Win32_DiskDrive | Select -ExpandProperty Model; Write-Host '=PLACA-MAE='; (Get-CimInstance Win32_BaseBoard).Manufacturer + ' ' + (Get-CimInstance Win32_BaseBoard).Product"</div>
+              <button onclick="copiarComando()" style="position:absolute;top:8px;right:8px;background:var(--neon2);border:none;border-radius:3px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:1px">COPIAR</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);margin-bottom:8px">
+              <span style="color:var(--neon2)">Passo 3</span> — Cole o resultado do CMD aqui:
+            </div>
+            <textarea id="cmd-resultado" placeholder="Cole aqui o resultado do comando..." style="width:100%;height:160px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:12px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;resize:vertical;outline:none;line-height:1.6"></textarea>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button onclick="interpretarHardware()" class="btn-batch" style="flex:1;padding:12px">⚡ INTERPRETAR E PREENCHER</button>
+            <button onclick="fecharDetector()" class="btn-outline">Cancelar</button>
+          </div>
+          <div class="err-msg" id="detector-err" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="peca-list" id="peca-list"></div>
 
@@ -450,19 +484,7 @@ function calcularLocal(vb,anos,meses,conservacao){
   return { valorBase:Math.round(vb), valorAposTempo:Math.round(v), valorFinal:Math.round(vf), percentualTempo:+pctT.toFixed(1), percentualDesgaste:+(cfg.d*100).toFixed(1), percentualTotal:+(((vb-vf)/vb)*100).toFixed(1), conservacaoLabel:cfg.label, precos:{rapida:Math.round(vf*.92),justo:Math.round(vf),maximo:Math.round(vf*1.1)}, detalhes:{anos,meses,conservacao} };
 }
 
-async function buscarML(query){
-  try {
-    const r = await fetch(`/api/buscar?q=${encodeURIComponent(query)}`);
-    const d = await r.json();
-    if (!r.ok || !d.encontrado)
-      throw new Error(d.erro || d.mensagem || 'Sem resultados');
-    return { base: d.valorBase, total: d.totalResultados, lista: d.anuncios };
-  } catch(e) {
-    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))
-      throw new Error('Sem conexão. Verifique sua internet.');
-    throw e;
-  }
-}
+
 
 
 
@@ -474,26 +496,7 @@ function switchTab(id,btn){
 }
 
 /* ══ PEÇA ÚNICA ══ */
-async function buscarMercado(){
-  const nome=$('nome').value.trim();
-  if(!nome){ showErr('err-busca','Informe o nome/modelo.'); return; }
-  hideErr('err-busca'); showSt('status-busca','status-txt','Consultando IA para estimar preço…');
-  $('btn-buscar').classList.add('loading'); $('market-bar').classList.remove('visible');
-  try {
-    const r=await buscarML(nome);
-    $('valor-base').value=r.base;
-    setTxt('market-price',fmt(r.base)); setTxt('market-count',`${r.total} referências analisadas pela IA`);
-    const le=$('market-listings'); le.innerHTML='';
-    r.lista.forEach(a=>{ const item=document.createElement('div'); item.className='listing-item'; item.innerHTML=`<img class="listing-thumb" src="${a.thumbnail||''}" onerror="this.style.display='none'"/><span class="listing-title">${a.titulo||a.title||''}</span><span class="listing-cond">${a.condicao||'Novo'}</span><span class="listing-price">${fmt(a.preco||a.price||0)}</span>`; item.onclick=()=>window.open(a.permalink,'_blank'); le.appendChild(item); });
-    $('market-bar').classList.add('visible');
-  } catch(e){
-    const msg = e.message.includes('Todos os métodos')
-      ? e.message
-      : '⚠ ' + e.message + ' — Informe o Valor Base manualmente no campo abaixo e clique em Calcular.';
-    showErr('err-busca', msg);
-  }
-  finally{ hideSt('status-busca'); $('btn-buscar').classList.remove('loading'); }
-}
+
 
 function calcular(){
   const nome=$('nome').value.trim(), anos=parseInt($('anos').value)||0, meses=parseInt($('meses').value)||0, conserv=$('conservacao').value, vb=parseFloat($('valor-base').value);
@@ -564,13 +567,11 @@ function adicionarPeca(d={}){
         </div>
       </div>
       <div class="pf-row">
-        <button class="btn-search" style="flex:1;padding:10px;font-size:10px" onclick="buscarPeca(${p.id})">🤖 BUSCAR PREÇO</button>
+        
         <button class="btn-danger" onclick="removerPeca(${p.id})">✕ Remover</button>
       </div>
-      <div class="status-msg" id="pst-${p.id}" style="margin-top:8px"><div class="spinner"></div><span id="pst-txt-${p.id}">Buscando…</span></div>
-      <div class="err-msg" id="perr-${p.id}"></div>
-      <div class="peca-market" id="pmarket-${p.id}">
-        <div class="pm-top"><div><div class="pm-label">Estimativa IA — Mercado BR</div><div class="pm-price" id="pmp-${p.id}">—</div></div><div class="pm-count" id="pmc-${p.id}">—</div></div>
+      
+      </div><div class="pm-count" id="pmc-${p.id}">—</div></div>
       </div>
     </div>`;
   list.appendChild(div);
@@ -593,22 +594,7 @@ function pfField(id,field,val){
   atualizarBtnBatch();
 }
 
-async function buscarPeca(id){
-  const p=pecas.find(x=>x.id===id); if(!p) return;
-  const nome=$(`pf-nome-${id}`)?.value.trim();
-  if(!nome){ showErr(`perr-${id}`,'Informe o nome da peça.'); return; }
-  hideErr(`perr-${id}`); showSt(`pst-${id}`,`pst-txt-${id}`,'Consultando IA para estimar preço…');
-  const btn=document.querySelector(`[data-peca-id="${id}"] .btn-search`);
-  if(btn) btn.classList.add('loading');
-  try {
-    const r=await buscarML(nome);
-    p.valorBase=r.base; $(`pf-vbase-${id}`).value=r.base;
-    setTxt(`pmp-${id}`,fmt(r.base)); setTxt(`pmc-${id}`,`${r.total} anúncios`);
-    $(`pmarket-${id}`).classList.add('visible');
-    document.querySelector(`[data-peca-id="${id}"]`)?.classList.add('calculada');
-  } catch(e){ showErr(`perr-${id}`,'⚠ '+e.message); }
-  finally{ hideSt(`pst-${id}`); if(btn) btn.classList.remove('loading'); atualizarBtnBatch(); }
-}
+
 
 function removerPeca(id){
   pecas=pecas.filter(p=>p.id!==id);
@@ -620,34 +606,20 @@ function removerPeca(id){
 function atualizarBadge(){ setTxt('badge-pecas',pecas.length||'0'); }
 function atualizarBtnBatch(){ $('btn-batch').disabled=!pecas.some(p=>(p.nome||'').trim()); }
 
-async function calcularTudo(){
+function calcularTudo(){
   const validas=pecas.filter(p=>(p.nome||'').trim());
-  if(!validas.length) return;
-  $('btn-batch').disabled=true;
-  showSt('status-batch','status-batch-txt','Iniciando cálculo em lote…');
-  $('progress-wrap').classList.add('visible'); $('progress-bar').style.width='0%';
-  let done=0;
-  for(const p of validas){
-    const card=document.querySelector(`[data-peca-id="${p.id}"]`);
-    if(card) card.classList.add('calculando');
-    setTxt('status-batch-txt',`Buscando: ${p.nome}…`);
-    try {
-      if(!p.valorBase){
-        const r=await buscarML(p.nome); p.valorBase=r.base;
-        $(`pf-vbase-${p.id}`).value=r.base; setTxt(`pmp-${p.id}`,fmt(r.base)); $(`pmarket-${p.id}`).classList.add('visible');
-      }
-      const a=parseInt($(`pf-anos-${p.id}`)?.value)||0, m=parseInt($(`pf-meses-${p.id}`)?.value)||0, c=$(`pf-conserv-${p.id}`)?.value||'leve';
-      p.resultado=calcularLocal(p.valorBase,a,m,c);
-      setTxt(`pv-${p.id}`,fmt(p.resultado.precos.justo));
-      if(card){ card.classList.remove('calculando'); card.classList.add('calculada'); }
-    } catch(e){
-      showErr(`perr-${p.id}`,'⚠ '+e.message);
-      if(card) card.classList.remove('calculando');
-    }
-    done++; $('progress-bar').style.width=((done/validas.length)*100)+'%';
-    await new Promise(r=>setTimeout(r,150));
-  }
-  hideSt('status-batch'); $('btn-batch').disabled=false;
+  if(!validas.length){ alert('Adicione pelo menos uma peca com nome e valor base.'); return; }
+  const semValor=validas.filter(p=>!p.valorBase);
+  if(semValor.length){ alert('Preencha o Valor Base (R$) para: ' + semValor.map(p=>p.nome).join(', ')); return; }
+  validas.forEach(p=>{
+    const a=parseInt(document.getElementById('pf-anos-'+p.id)?.value)||0;
+    const m=parseInt(document.getElementById('pf-meses-'+p.id)?.value)||0;
+    const c=document.getElementById('pf-conserv-'+p.id)?.value||'leve';
+    p.resultado=calcularLocal(p.valorBase,a,m,c);
+    setTxt('pv-'+p.id,fmt(p.resultado.precos.justo));
+    const card=document.querySelector('[data-peca-id="'+p.id+'"]');
+    if(card) card.classList.add('calculada');
+  });
   const com=validas.filter(p=>p.resultado);
   if(com.length) renderResumo(com);
 }
@@ -679,6 +651,79 @@ function showSt(sid,tid,msg){ setTxt(tid,msg); $(sid).classList.add('visible'); 
 function hideSt(sid){ $(sid).classList.remove('visible'); }
 function showErr(id,msg){ const e=$(id); if(e){ e.textContent=msg; e.classList.add('visible'); } }
 function hideErr(id){ const e=$(id); if(e) e.classList.remove('visible'); }
+
+
+/* ══ DETECTOR DE HARDWARE ══ */
+function mostrarDetector(){ $('detector-modal').style.display='block'; $('detector-modal').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function fecharDetector(){ $('detector-modal').style.display='none'; }
+
+function copiarComando(){
+  const cmd=$('cmd-text').textContent;
+  navigator.clipboard.writeText(cmd).then(()=>{
+    const btn=document.querySelector('[onclick="copiarComando()"]');
+    btn.textContent='COPIADO!'; btn.style.background='var(--green)'; btn.style.color='var(--bg)';
+    setTimeout(()=>{ btn.textContent='COPIAR'; btn.style.background='var(--neon2)'; btn.style.color='#fff'; },2000);
+  });
+}
+
+function interpretarHardware(){
+  const texto=$('cmd-resultado').value.trim();
+  if(!texto){ showErr('detector-err','Cole o resultado do PowerShell primeiro.'); return; }
+  hideErr('detector-err');
+
+  const pecasDetectadas=[];
+  const linhas=texto.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+
+  let secaoAtual='';
+  linhas.forEach(l=>{
+    // Detecta seção
+    if(l==='=CPU=')    { secaoAtual='cpu'; return; }
+    if(l==='=GPU=')    { secaoAtual='gpu'; return; }
+    if(l==='=RAM=')    { secaoAtual='ram'; return; }
+    if(l==='=DISCO=')  { secaoAtual='disco'; return; }
+    if(l==='=PLACA-MAE=') { secaoAtual='mb'; return; }
+
+    // Ignora linhas de separador (----) e cabeçalhos
+    if(l.match(/^-+$/) || l==='Name' || l==='Model' || l==='Sum') return;
+
+    const val=l.trim();
+    if(!val||val.length<2) return;
+
+    if(secaoAtual==='cpu' && val.length>4)
+      pecasDetectadas.push({nome:val, tipo:'CPU'});
+
+    if(secaoAtual==='gpu' && val.length>4 && !val.match(/Microsoft|Basic|Display/i))
+      pecasDetectadas.push({nome:val, tipo:'GPU'});
+
+    if(secaoAtual==='ram'){
+      const gb=parseFloat(val);
+      if(!isNaN(gb)&&gb>=1&&gb<=1024)
+        pecasDetectadas.push({nome:'Memória RAM '+Math.round(gb)+'GB', tipo:'RAM'});
+    }
+
+    if(secaoAtual==='disco' && val.length>3 && !val.match(/^\d+$/))
+      pecasDetectadas.push({nome:val, tipo:'Armazenamento'});
+
+    if(secaoAtual==='mb' && val.length>3 && !val.match(/^\s*$/))
+      pecasDetectadas.push({nome:val, tipo:'Placa-mãe'});
+  });
+
+  if(!pecasDetectadas.length){
+    showErr('detector-err','Não foi possível identificar componentes. Verifique se colou o resultado completo.');
+    return;
+  }
+
+  // Remove duplicatas
+  const unicas=pecasDetectadas.filter((p,i,arr)=>arr.findIndex(x=>x.nome===p.nome)===i);
+
+  pecas=[]; nextId=1; $('peca-list').innerHTML='';
+  unicas.forEach(p=>adicionarPeca({nome:p.nome}));
+  atualizarBadge(); atualizarBtnBatch();
+  fecharDetector();
+  $('peca-list').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* Atualizar atualizarBtnBatch para não checar valorBase */
 
 /* ══ Seed: 4 peças padrão ══ */
 ['GPU','CPU','RAM','SSD'].forEach(()=>adicionarPeca());
